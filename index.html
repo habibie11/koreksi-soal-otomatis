@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <title>Aplikasi Koreksi Soal Pilihan Ganda</title>
@@ -10,38 +11,45 @@
       margin: 0;
       padding: 20px;
     }
-    h1, h2 {
+
+    h1,
+    h2 {
       text-align: center;
     }
+
     .container {
       max-width: 800px;
       margin: auto;
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
     .section {
       display: none;
       margin-top: 20px;
     }
+
     .section.active {
       display: block;
     }
+
     label {
       font-weight: bold;
       display: block;
       margin-top: 10px;
     }
-    input, textarea, button {
+
+    input,
+    textarea,
+    button {
       width: 100%;
       margin-top: 5px;
       padding: 8px;
       font-size: 16px;
     }
-    textarea {
-      resize: vertical;
-    }
+
     button {
       background: #2563eb;
       color: #fff;
@@ -50,26 +58,39 @@
       cursor: pointer;
       margin-top: 15px;
     }
+
     button.secondary {
       background: #059669;
     }
-    button:hover {
-      opacity: 0.9;
-    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
     }
-    table, th, td {
+
+    table,
+    th,
+    td {
       border: 1px solid #ddd;
     }
-    th, td {
+
+    th,
+    td {
       padding: 8px;
       text-align: center;
     }
-    .benar { color: green; font-weight: bold; }
-    .salah { color: red; font-weight: bold; }
+
+    .benar {
+      color: green;
+      font-weight: bold;
+    }
+
+    .salah {
+      color: red;
+      font-weight: bold;
+    }
+
     .info {
       background: #eef2ff;
       padding: 10px;
@@ -78,52 +99,39 @@
     }
   </style>
 </head>
-<body>
 
+<body>
   <div class="container">
     <h1>Aplikasi Koreksi Soal Pilihan Ganda</h1>
 
-    <!-- STEP 1: DATA UJIAN -->
     <div class="section active" id="step1">
       <h2>1. Data Ujian</h2>
       <label>Nama Ujian</label>
-      <input type="text" id="namaUjian" placeholder="Contoh: UH Informatika Kelas 8">
-
+      <input type="text" id="namaUjian">
       <label>Jumlah Soal</label>
-      <input type="number" id="jumlahSoal" min="1" placeholder="Contoh: 20">
-
+      <input type="number" id="jumlahSoal" min="1">
       <button onclick="simpanUjian()">Lanjut Input Kunci</button>
     </div>
 
-    <!-- STEP 2: KUNCI JAWABAN -->
     <div class="section" id="step2">
       <h2>2. Input Kunci Jawaban</h2>
-      <label>Kunci Jawaban (satu baris satu jawaban A-E)</label>
-      <textarea id="kunciInput" rows="6" placeholder="A\nC\nB\nD"></textarea>
-
-      <button onclick="simpanKunci()">Simpan Kunci Jawaban</button>
+      <textarea id="kunciInput" rows="6" placeholder="A\nB\nC"></textarea>
+      <button onclick="simpanKunci()">Simpan Kunci</button>
     </div>
 
-    <!-- STEP 3: JAWABAN MURID -->
     <div class="section" id="step3">
-      <h2>3. Input Jawaban Murid</h2>
+      <h2>3. Jawaban Murid</h2>
       <label>Nama Murid</label>
       <input type="text" id="namaMurid">
-
       <label>Kelas</label>
-      <input type="text" id="kelasMurid" placeholder="Contoh: 8A / X RPL">
-
-      <label>Jawaban Murid (satu baris satu jawaban A-E)</label>
+      <input type="text" id="kelasMurid">
       <textarea id="jawabanMurid" rows="6"></textarea>
-
-      <button onclick="koreksi()">Koreksi Jawaban</button>
+      <button onclick="koreksi()">Koreksi</button>
     </div>
 
-    <!-- STEP 4: HASIL -->
     <div class="section" id="step4">
       <h2>4. Hasil Koreksi</h2>
       <div class="info" id="ringkasan"></div>
-
       <table id="tabelHasil">
         <thead>
           <tr>
@@ -135,105 +143,115 @@
         </thead>
         <tbody></tbody>
       </table>
-
       <button class="secondary" onclick="koreksiBerikutnya()">Koreksi Murid Berikutnya</button>
+
+      <hr>
+      <h2>Rekap Nilai</h2>
+      <table id="tabelRekap">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>Kelas</th>
+            <th>Benar</th>
+            <th>Nilai</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="resetRekap()" style="background:#dc2626">Reset Rekap</button>
     </div>
   </div>
 
   <script>
     let totalSoal = 0;
     let kunciJawaban = [];
+    let rekap = JSON.parse(localStorage.getItem('rekapNilai') || '[]');
+
+    renderRekap();
 
     function showStep(id) {
-      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
     function simpanUjian() {
-      const nama = document.getElementById('namaUjian').value.trim();
       totalSoal = parseInt(document.getElementById('jumlahSoal').value);
-
-      if (!nama || !totalSoal) {
-        alert('Nama ujian dan jumlah soal wajib diisi');
-        return;
-      }
+      if (!totalSoal) return alert('Jumlah soal wajib diisi');
       showStep('step2');
     }
 
     function simpanKunci() {
-      const input = document.getElementById('kunciInput').value
-        .toUpperCase()
-        .split(/\s+/)
-        .filter(v => v);
-
-      if (input.length !== totalSoal) {
-        alert('Jumlah kunci tidak sesuai jumlah soal');
-        return;
-      }
-
-      if (!input.every(j => ['A','B','C','D','E'].includes(j))) {
-        alert('Kunci hanya boleh A, B, C, D, E');
-        return;
-      }
-
+      const input = document.getElementById('kunciInput').value.toUpperCase().split(/\s+/).filter(Boolean);
+      if (input.length !== totalSoal) return alert('Jumlah kunci tidak sesuai');
       kunciJawaban = input;
       showStep('step3');
     }
 
     function koreksi() {
-      const nama = document.getElementById('namaMurid').value.trim();
-      const kelas = document.getElementById('kelasMurid').value.trim();
-      const jawaban = document.getElementById('jawabanMurid').value
-        .toUpperCase()
-        .split(/\s+/)
-        .filter(v => v);
-
-      if (!nama || !kelas) {
-        alert('Nama dan kelas murid wajib diisi');
-        return;
-      }
-
-      if (jawaban.length !== totalSoal) {
-        alert('Jumlah jawaban tidak sesuai jumlah soal');
-        return;
-      }
+      const nama = namaMurid.value.trim();
+      const kelas = kelasMurid.value.trim();
+      const jawaban = jawabanMurid.value.toUpperCase().split(/\s+/).filter(Boolean);
+      if (!nama || !kelas) return alert('Nama & kelas wajib');
+      if (jawaban.length !== totalSoal) return alert('Jawaban tidak sesuai');
 
       let benar = 0;
       const tbody = document.querySelector('#tabelHasil tbody');
       tbody.innerHTML = '';
 
-      jawaban.forEach((jwb, i) => {
-        const status = jwb === kunciJawaban[i];
-        if (status) benar++;
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${i+1}</td>
-            <td>${kunciJawaban[i]}</td>
-            <td>${jwb}</td>
-            <td class="${status ? 'benar' : 'salah'}">${status ? '✔' : '✖'}</td>
-          </tr>`;
+      jawaban.forEach((j, i) => {
+        const ok = j === kunciJawaban[i];
+        if (ok) benar++;
+        tbody.innerHTML += `<tr><td>${i + 1}</td><td>${kunciJawaban[i]}</td><td>${j}</td><td class="${ok ? 'benar' : 'salah'}">${ok ? '✔' : '✖'}</td></tr>`;
       });
 
       const nilai = ((benar / totalSoal) * 100).toFixed(2);
+      ringkasan.innerHTML = `<b>Nama:</b> ${nama}<br><b>Kelas:</b> ${kelas}<br><b>Benar:</b> ${benar}<br><b>Nilai:</b> ${nilai}`;
 
-      document.getElementById('ringkasan').innerHTML = `
-        <strong>Nama:</strong> ${nama}<br>
-        <strong>Kelas:</strong> ${kelas}<br>
-        <strong>Benar:</strong> ${benar} | <strong>Salah:</strong> ${totalSoal - benar}<br>
-        <strong>Nilai:</strong> ${nilai}
-      `;
-
+      simpanRekap(nama, kelas, benar, nilai);
       showStep('step4');
     }
 
     function koreksiBerikutnya() {
-      document.getElementById('namaMurid').value = '';
-      document.getElementById('kelasMurid').value = '';
-      document.getElementById('jawabanMurid').value = '';
+      namaMurid.value = '';
+      kelasMurid.value = '';
+      jawabanMurid.value = '';
       showStep('step3');
     }
-  </script>
 
+    function simpanRekap(nama, kelas, benar, nilai) {
+      rekap.push({ nama, kelas, benar, nilai });
+      localStorage.setItem('rekapNilai', JSON.stringify(rekap));
+      renderRekap();
+    }
+
+    function renderRekap() {
+      const tbody = document.querySelector('#tabelRekap tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      rekap.forEach((r, i) => {
+        tbody.innerHTML += `<tr><td>${i + 1}</td><td>${r.nama}</td><td>${r.kelas}</td><td>${r.benar}</td><td>${r.nilai}</td></tr>`;
+      });
+    }
+
+    function resetRekap() {
+      if (!confirm('Reset semua rekap?')) return;
+      rekap = [];
+      localStorage.removeItem('rekapNilai');
+      renderRekap();
+    }
+
+    function exportExcel() {
+      let csv = 'No,Nama,Kelas,Benar,Nilai\n';
+      rekap.forEach((r, i) => { csv += `${i + 1},${r.nama},${r.kelas},${r.benar},${r.nilai}\n`; });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'rekap_nilai.csv';
+      a.click();
+    }
+  </script>
 </body>
+
 </html>
